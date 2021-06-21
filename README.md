@@ -1,7 +1,7 @@
 # Ape-Clerk--Pico8-Game
 This is a project I completed as part of a 10 day game jam in May 2020. The theme of the jam was to develop a game based on a randomnly generated name. My name was "Ape Clerk" and I chose to use the Pico8 console to program the game. This console uses the Lua language.
 
-A playable version of the game is avaiable at https://defgefx.itch.io/ape-clerk. I documented the journey as I went on my twitter account @geoffsejai.
+A playable version of the game is avaiable at https://defgefx.itch.io/ape-clerk. I documented the journey as I went on my twitter account https://twitter.com/GeoffSejai.
 
 For this repository I have included the latest version of the code which I've called v1.2 and was updated after the original submission. The changes were mainly small changes and some bug fixes. I summarised the changes in a dev.log on itch:
 
