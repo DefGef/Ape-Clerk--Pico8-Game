@@ -1,0 +1,401 @@
+--ape clerk--
+--by geoff sejai-smith--
+
+function _init()
+    ape={x=63,y=63,sprite=1,dx=0,dy=0,f,timer=0,uke=false}
+    customer={x=-20,y=96,sprite=11,f}
+    convo=false --customer conversations--
+    knights={}
+    create_knight(23,128,23,83)
+    create_knight(16,221,13,93)
+    create_knight(90,221,13,93)
+    create_knight(132,0,132,242)
+    create_knight(152,62,140,239)
+    create_knight(130,44,130,176)
+    create_knight(152,128,152,241)
+    create_knight(148,219,148,246)
+    create_knight(243,219,148,246)
+    notes={}
+    books={}
+    create_book(-8,-8)
+    book_counter=0
+    book_create=0
+    camx,camy=0,0
+    gameover=false
+    title=true
+    title_animation=0
+    title_box=0
+    title_x=0
+    timer=0 --game state timer--
+    game_win=false
+    spawn_timer=0
+    spawn=1
+    poke(0x5f5d, 15) --btn 4 sensitivity--
+    music(0)
+    end
+    
+    function _update()
+        if title then
+            timer+=1
+            if btn(4) and timer>30 then
+                timer=0
+                title=false
+            end
+        else
+            if not gameover then
+                if btn(0) then 
+                    ape.f=true
+                    ape.dx=-1
+                    if hit(ape.x+3+ape.dx,ape.y,9,7) or hit(ape.x+3+ape.dx,ape.y+9,9,6) then
+                        ape.dx=0
+                    end
+                    ape.x+=ape.dx
+                end
+                if btn(1) then
+                    ape.f=false
+                    ape.dx=1
+                    if hit(ape.x+3+ape.dx,ape.y,9,7) or hit(ape.x+3+ape.dx,ape.y+9,9,6) then
+                        ape.dx=0
+                    end
+                    ape.x+=ape.dx
+                end
+                if btn(2) then
+                    ape.dy=-1
+                    if hit(ape.x+3,ape.y+ape.dy,9,15) then
+                        ape.dy=0
+                    end
+                    ape.y+=ape.dy
+                end
+                if btn(3) then
+                    ape.dy=1
+                    if hit(ape.x+3,ape.y+ape.dy,9,15) then
+                        ape.dy=0
+                    end
+                    ape.y+=ape.dy
+                end
+                if btnp(4) then
+                    ape.uke=true
+                    create_note(ape.x+8,ape.y+4,ape.f)
+                    sfx(0)
+                elseif not btn(4) then
+                    ape.uke=false
+                end
+            end
+            
+            ape.x=mid(-3,ape.x,245)
+            ape.y=mid(0,ape.y,240)
+            
+            if ape.x>63 then
+                camx=min(ape.x-63,129)
+            end
+            if ape.y>63 then
+                camy=min(ape.y-63,129)
+            end
+        
+            for knight in all(knights) do
+                if not knight.f then
+                    if knight.x<knight.bx then
+                        knight.x+=1
+                    else
+                        knight.f=true
+                    end
+                end
+        
+                if knight.f then 
+                    if knight.x>knight.ax then
+                        knight.x-=1
+                    else
+                        knight.f=false
+                    end
+                end
+                for note in all(notes) do
+                    if knight_col(note.x,note.y,knight) then
+                        del(knights,knight)
+                        del(notes,note)
+                        sfx(1)
+                    end
+                end
+                if knight_col(ape.x+8,ape.y,knight) then
+                    gameover=true
+                elseif knight_col(ape.x+8,ape.y+15,knight) then
+                    gameover=true
+                end
+            end
+    
+        
+            for note in all(notes) do
+                if note.f then
+                    note.x-=3
+                else
+                    note.x+=3
+                end
+                if note.x>camx+128 or note.x<camx then
+                    del(notes,note)
+                end
+            end
+        
+            for book in all(books) do
+                book.timer+=1
+                if book_col(ape.x+8,ape.y+8,book) then
+                    del(books,book)
+                    book_counter+=1
+                    sfx(3)
+                end
+            end
+        
+            if customer.x<7 then
+                customer.x+=1
+                if customer.x==7 then
+                    sfx(2)
+                end
+            end
+        
+            if cust_col(ape.x-3,ape.y+12,customer) then
+                    convo=true
+                 if book_counter==0 and book_create==0 then
+                     create_book(40,244)
+                     book_create+=1
+        elseif book_counter==1 and book_create==1 then
+            create_book(152,16)
+            book_create+=1
+        elseif book_counter==2 and book_create==2 then
+            create_book(240,244)
+            book_create+=1
+        elseif book_counter==3 then
+            timer+=1
+            if timer>=30 then
+                game_win=true
+                        end
+        end
+            else
+                convo=false
+            end
+            
+            if spawn_timer>=900 then
+                if spawn==1 then
+                    create_knight(0,48,0,110)
+                elseif spawn==2 then
+                    create_knight(32,80,0,100)
+                elseif spawn==3 then
+                    create_knight(70,88,52,110)
+                    create_knight(130,192,88,154)
+                    spawn=0
+                end
+                spawn+=1 
+                spawn_timer=0
+            end
+            
+            spawn_timer+=1
+            
+            if gameover then
+                music(-1)
+                timer+=1
+                if timer==5 then
+                    sfx(4)
+                end
+                if btn(4) and timer>30 then
+                    reload()
+                    gameover=false
+                    _init()
+                end
+            end
+            
+            if game_win then
+                timer+=1
+                if btn(4) and timer>30 then
+                    reload()
+                    gameover=false
+                    _init()
+                end 
+            end
+        end
+    end
+    
+    function _draw()
+        if title then
+         cls()
+         camera(0,0)
+         sspr(0,120,24,8,12,8,36,16)
+         sspr(24,120,40,8,52,8,62,16)
+         rect(0,0,127,127,9)
+         if timer<=29 then
+         sspr(96,112,16,16,50+title_x,51+title_x,35+title_box,35+title_box)
+         title_box+=1
+         title_x-=0.5
+         else
+              --animates the title screen--
+             title_animation+=1
+             if title_animation<=5 then
+                 sspr(96,112,16,16,35,36,64,64)
+             else
+                 sspr(112,112,16,16,35,36,64,64)
+          end
+          if title_animation==12 then
+                    title_animation=0
+                end
+             print("press z to start",32,112,7)
+      end
+     else
+            cls()
+            camera(camx,camy)
+            map(0,0,0,0,48,48)
+            print("welcome to",11,10,7)
+            print("jerry's books",11,17,7)
+            print("horror",101,56,7)
+            print("sci-fi",101,91,7)
+            print("fantasy",47,118,7)
+            outline_spr(customer.sprite,customer.x,customer.y,customer.f)
+            if btn(0) or btn(1) or btn(2) or btn(3) then
+                if ape.uke then
+                    ape.sprites={204,204,204,206,206,206}
+                else 
+                    ape.sprites={1,1,1,3,3,3,5,5,5,7,7,7}
+                end
+                ape.timer+=1
+                ape.sprite=ape.sprites[ape.timer%#ape.sprites+1]
+            elseif btn(4) then
+                ape.sprites={236,236,236,238,238,238}
+                ape.timer+=1
+                ape.sprite=ape.sprites[ape.timer%#ape.sprites+1]
+            else
+                ape.sprite=1
+            end
+         outline_spr(ape.sprite,ape.x,ape.y,ape.f)
+        
+            for knight in all(knights) do
+                knight.timer+=1
+                knight.sprite=knight.sprites[knight.timer%#knight.sprites+1]
+                outline_spr(knight.sprite,knight.x,knight.y,knight.f)
+            end
+        
+            for book in all(books) do
+                book.sprite=book.sprites[book.timer%#book.sprites+1]
+                rect(book.x,book.y-1,book.x+7,book.y+8,1)
+                spr(book.sprite,book.x,book.y)
+            end
+        
+            for note in all(notes) do
+                spr(16,note.x,note.y)
+            end
+            
+            if convo and book_counter==0 then
+          rectfill(camx,camy+108,camx+127,camy+127,7)
+       rectfill(camx+1,camy+109,camx+126,camy+126,0)	
+       print("i love fantasy books, do you",camx+2,camy+110,7)
+       print("have 'warlock visage'?",camx+2,camy+117,7)	
+      elseif convo and book_counter==1 then
+       rectfill(camx,camy+108,camx+127,camy+127,7)
+       rectfill(camx+1,camy+109,camx+126,camy+126,0)	
+       print("thanks!, do you have the horror",camx+2,camy+110,7)
+       print("novel 'razor's banshee'?",camx+2,camy+117,7)
+      elseif convo and book_counter==2 then
+       rectfill(camx,camy+108,camx+127,camy+127,7)
+       rectfill(camx+1,camy+109,camx+126,camy+126,0)	
+       print("great!, the last one is sci-fi",camx+2,camy+110,7)
+       print("it's 'diamond memory'",camx+2,camy+117,7)
+      elseif convo and book_counter==3 then
+       rectfill(camx,camy+108,camx+127,camy+127,7)
+       rectfill(camx+1,camy+109,camx+126,camy+126,0)	
+       print("thats amazing you had them",camx+2,camy+110,7)
+       print("all, you're the best!",camx+2,camy+117,7)
+      end
+        
+            print("books:"..book_counter.."/3",camx+89,camy+3,0)
+            print("books:"..book_counter.."/3",camx+88,camy+2,7)
+    
+            if gameover then
+                cls()
+                rect(camx,camy,camx+127,camy+127,9)
+                sspr(104,16,16,16,camx+30,camy+32,64,64)
+                print("gameover",camx+44,camy+24,7)
+             print("press z to restart",camx+32,camy+112,7)
+            end
+            
+            if game_win then
+                cls()
+                rect(camx,camy,camx+127,camy+127,9)
+                print("you win, woop woop!!",camx+26,camy+20,7)
+                print("press z to restart",camx+28,camy+112,7)
+                title_animation+=1
+             if title_animation<=5 then
+                 sspr(80,96,16,16,camx+31,camy+36,64,64)
+             else
+                 sspr(80,112,16,16,camx+31,camy+36,64,64)
+          end
+          if title_animation==12 then
+                    title_animation=0
+                end
+            end
+        end
+    end
+    --main code ends, additional functions below
+    
+    function outline_spr(sprite,x,y,f)
+     for i=1,15 do
+      pal(i,1)
+     end
+     for xoffset=-1,1 do
+      for yoffset=-1,1 do
+       spr(sprite,x+xoffset,y+yoffset,2,2,f)
+      end
+     end
+     pal()
+     spr(sprite,x,y,2,2,f)
+    end
+    
+    function create_note(x,y,f)
+        note = {x=x,y=y,f=f}
+        add(notes,note)
+    end
+    
+    function hit(x,y,w,h)
+        collide=false
+        for i=x,x+w,w do
+            if fget(mget(i/8,y/8))>0 or
+                        fget(mget(i/8,(y+h)/8))>0 then
+                        collide=true
+            end
+        end
+        return collide
+    end
+    
+    function create_knight(x,y,ax,bx)
+        knight={x=x,y=y,ax=ax,bx=bx,f=f}
+        knight.timer=0
+        if knight.x<128 then
+            knight.sprites={33,33,33,33,33,35,35,35,35,35}
+        elseif knight.x>128 and knight.y<128 then
+            knight.sprites={37,37,37,37,37,39,39,39,39,39}
+        elseif knight.x>128 and knight.y>127 then
+            knight.sprites={41,41,41,41,41,43,43,43,43,43}
+        end
+        add(knights,knight)
+    end
+    
+    function knight_col(x,y,knight)
+        if x>=knight.x+4 and x<=knight.x+12 and y>=knight.y and y<=knight.y+15 then
+            return true
+        end
+        return false
+    end
+    
+    function create_book(x,y)
+        book={x=x,y=y}
+        book.sprites={15,15,15,31,31,31}
+        book.timer=0
+        add(books,book)
+    end
+    
+    function book_col(x,y,book)
+        if x>=book.x and x<=book.x+8 and y>=book.y and y<=book.y+8 then
+            return true
+     end
+        return false
+    end
+    
+    function cust_col(x,y,customer)
+        if x>=customer.x and x<=customer.x+20 and y>=customer.y-2 and y<=customer.y+8 then
+            return true
+     end
+        return false
+    end
